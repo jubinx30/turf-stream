@@ -1,0 +1,12 @@
+services:
+  mediamtx:
+    image: bluenviron/mediamtx:latest
+    container_name: turf-live-mediamtx
+    restart: unless-stopped
+    ports:
+      - "8554:8554"   # RTSP ingestion
+      - "1935:1935"   # RTMP ingestion
+      - "8888:8888"   # HLS stream delivery
+      - "9997:9997"   # MediaMTX API
+    volumes:
+      - ./mediamtx/mediamtx.yml:/mediamtx.yml:ro

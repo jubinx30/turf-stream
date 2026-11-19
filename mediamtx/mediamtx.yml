@@ -1,0 +1,65 @@
+###############################################
+# MediaMTX configuration for Turf Live
+# Camera Ingestion Agnostic Pipeline
+###############################################
+
+# General
+logLevel: info
+logDestinations: [stdout]
+
+# API for backend stream inspection & stats
+api: yes
+apiAddress: :9997
+
+# RTSP listener (Ingestion port for RTSP cameras, FFmpeg, OBS, Pi Cam)
+rtsp: yes
+rtspAddress: :8554
+rtspTransports: [tcp, udp]
+
+# RTMP listener (Ingestion for sports cameras, GoPro, mobile streaming apps)
+rtmp: yes
+rtmpAddress: :1935
+
+# HLS server (Frontend delivery to video players)
+hls: yes
+hlsAddress: :8888
+hlsAlwaysRemux: yes
+hlsVariant: fmp4
+hlsSegmentDuration: 2s
+hlsPartDuration: 500ms
+hlsSegmentCount: 5
+hlsAllowOrigins: ['*']
+
+# WebRTC (optional ultra-low latency)
+webrtc: no
+
+# Stream Paths Configuration
+paths:
+  # Turf 1 - Main Football Arena (Pushed by camera/ffmpeg or pulled)
+  turf1:
+    source: publisher
+    record: no
+
+  # Turf 2 - Downtown Futsal Pitch
+  turf2:
+    source: publisher
+    record: no
+
+  # Turf 3 - Indoor Box Cricket
+  turf3:
+    source: publisher
+    record: no
+
+  # Example: Pulling directly from Android Phone running "IP Webcam" app
+  # Just replace IP with your phone's Wi-Fi IP
+  phone_cam_demo:
+    source: rtsp://192.168.1.150:8080/h264_pcm.sdp
+    sourceOnDemand: yes
+
+  # Example: Pulling from standard PoE ONVIF / RTSP camera (Hikvision / Dahua / Reolink)
+  poe_cam_demo:
+    source: rtsp://admin:admin12345@192.168.1.120:554/Streaming/Channels/101
+    sourceOnDemand: yes
+
+  # Catch-all: allows any camera to publish to rtsp://<server>:8554/<any_name>
+  all_others:
