@@ -1,101 +1,125 @@
 import React from 'react';
-import { Radio, MapPin, Activity, Check } from 'lucide-react';
+import { MapPin, Star, Radio, Sparkles, Check, ArrowRight, Calendar } from 'lucide-react';
 
-export default function TurfDirectory({ turfs, activeTurfId, onSelectTurf }) {
+export default function TurfDirectory({ 
+  turfs, 
+  activeTurfId, 
+  onSelectTurf, 
+  onBookTurf 
+}) {
   return (
-    <div className="card">
-      <div className="card-header">
-        <div className="card-title">
-          <Activity size={18} className="text-emerald-400" />
-          <span>Active Turfs Directory</span>
+    <div className="grounds-section" id="grounds-near-me">
+      <div className="grounds-section-header">
+        <div>
+          <div className="ott-section-badge">
+            <MapPin size={13} className="text-lime" />
+            <span>GROUNDS NEAR ME</span>
+          </div>
+          <h2 className="ott-section-title">Verified Grassroots Venues</h2>
         </div>
-        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-          {turfs.length} Pitches Online
+        <span className="grounds-count-badge">
+          {turfs.length} Arenas Active
         </span>
       </div>
 
-      <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
+      <div className="grounds-cards-grid">
         {turfs.map((turf) => {
           const isActive = turf.id === activeTurfId;
+
           return (
             <div
               key={turf.id}
+              className={`ground-card ${isActive ? 'active-pitch' : ''}`}
               onClick={() => onSelectTurf(turf.id)}
-              style={{
-                border: isActive ? '2px solid #10b981' : '1px solid var(--border-color)',
-                backgroundColor: isActive ? 'rgba(16, 185, 129, 0.08)' : 'var(--bg-card-hover)',
-                borderRadius: '12px',
-                padding: '1rem',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                position: 'relative'
-              }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.35rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span style={{ 
-                    fontWeight: 700, 
-                    fontSize: '0.95rem',
-                    color: isActive ? '#ffffff' : '#cbd5e1' 
-                  }}>
-                    {turf.name}
-                  </span>
-                  {isActive && (
-                    <span style={{ 
-                      background: '#10b981', 
-                      color: '#042f1a', 
-                      borderRadius: '50%', 
-                      width: 18, 
-                      height: 18, 
-                      display: 'inline-flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center' 
-                    }}>
-                      <Check size={12} strokeWidth={3} />
+              {/* Pitch Visual & Overlay Badges */}
+              <div className="ground-img-wrapper">
+                <img 
+                  src={turf.image || 'https://images.unsplash.com/photo-1529900241454-946a3628e93d?auto=format&fit=crop&w=800&q=80'} 
+                  alt={turf.name}
+                  className="ground-img" 
+                />
+                <div className="ground-img-overlay" />
+
+                {/* Top Badges */}
+                <div className="ground-top-badges">
+                  {turf.badge && (
+                    <span className="badge-ott-pill">{turf.badge}</span>
+                  )}
+                  {turf.isLive ? (
+                    <span className="badge-ott-live">
+                      <span className="live-radar-dot" />
+                      LIVE FEED
                     </span>
+                  ) : (
+                    <span className="badge-ott-ready">4K BROADCAST</span>
                   )}
                 </div>
 
-                <div className="badge badge-live">
-                  <span className="badge-live-pulse" />
-                  <span>LIVE</span>
+                {/* Price Tag Pill directly on card */}
+                <div className="ground-price-tag">
+                  {turf.priceFormatted || `$${turf.price}`}
                 </div>
               </div>
 
-              <div style={{ 
-                display: 'flex', 
-                gap: '0.5rem', 
-                alignItems: 'center', 
-                fontSize: '0.75rem', 
-                color: 'var(--text-muted)',
-                marginBottom: '0.5rem'
-              }}>
-                <MapPin size={12} />
-                <span>{turf.location}</span>
-                <span>&bull;</span>
-                <span>{turf.sport}</span>
-              </div>
+              {/* Card Content Details */}
+              <div className="ground-details">
+                <div className="ground-headline">
+                  <h3 className="ground-title">{turf.name}</h3>
+                  <div className="ground-rating">
+                    <Star size={13} className="fill-lime text-lime" />
+                    <span>{turf.rating || '4.9'}</span>
+                  </div>
+                </div>
 
-              <div style={{ 
-                fontSize: '0.75rem', 
-                color: 'var(--text-secondary)',
-                lineHeight: 1.4,
-                marginBottom: '0.6rem'
-              }}>
-                {turf.description}
-              </div>
+                <div className="ground-subline">
+                  <span className="ground-location">
+                    <MapPin size={12} />
+                    {turf.location}
+                  </span>
+                  <span className="ground-dot">&bull;</span>
+                  <span className="ground-sport">{turf.sport}</span>
+                  <span className="ground-dot">&bull;</span>
+                  <span className="ground-dims">{turf.dimensions}</span>
+                </div>
 
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center', 
-                fontSize: '0.7rem',
-                paddingTop: '0.5rem',
-                borderTop: '1px solid rgba(255, 255, 255, 0.06)',
-                color: 'var(--text-muted)'
-              }}>
-                <span>Ingest: <strong style={{ color: '#67e8f9' }}>{turf.streamPath}</strong></span>
-                <span style={{ color: '#10b981', fontWeight: 600 }}>Free Instant Watch &rarr;</span>
+                {/* Amenities Chips */}
+                <div className="ground-amenities-row">
+                  {(turf.amenities || ['Artificial Grass', 'Floodlights', 'Free Parking']).slice(0, 4).map((item, idx) => (
+                    <span key={idx} className="amenity-chip">
+                      {item}
+                    </span>
+                  ))}
+                </div>
+
+                {/* Actions Footer */}
+                <div className="ground-actions-footer">
+                  <button 
+                    type="button"
+                    className={`btn-ground-stream ${isActive ? 'is-streaming' : ''}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSelectTurf(turf.id);
+                      const player = document.getElementById('live-player-section');
+                      if (player) player.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                  >
+                    <Radio size={14} />
+                    <span>{isActive ? 'Watching Live' : 'Watch Live Feed'}</span>
+                  </button>
+
+                  <button 
+                    type="button"
+                    className="btn-ground-book"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (onBookTurf) onBookTurf(turf);
+                    }}
+                  >
+                    <Calendar size={14} />
+                    <span>Book Slot</span>
+                  </button>
+                </div>
               </div>
             </div>
           );

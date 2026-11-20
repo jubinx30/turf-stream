@@ -1,81 +1,116 @@
 import React from 'react';
-import { Video, ShieldCheck, Zap, RefreshCw, Cpu, CheckCircle2 } from 'lucide-react';
+import { 
+  Tv, 
+  MapPin, 
+  Film, 
+  Zap, 
+  RefreshCw, 
+  CheckCircle2, 
+  Cpu, 
+  Radio, 
+  Compass
+} from 'lucide-react';
 
 export default function Header({ 
   isSubscriber, 
   onToggleSubscriber, 
-  onOpenGuide, 
   onResetFixtures, 
-  turfsCount = 3,
-  mediaServerOnline = false 
+  turfsCount = 5,
+  mediaServerOnline = false,
+  activeTab = 'live',
+  onSelectTab,
+  onOpenTechGuide
 }) {
   return (
-    <header className="header">
-      <div className="header-inner">
-        {/* Brand */}
-        <div className="logo-group">
-          <div className="brand-icon">
-            <Video className="w-5 h-5 text-slate-950" strokeWidth={2.5} />
+    <header className="ott-header">
+      <div className="ott-header-inner">
+        {/* Left: Brand Logo & OTT Live Indicator */}
+        <div className="ott-brand-group">
+          <div className="ott-brand-icon">
+            <span className="brand-bolt">⚡</span>
           </div>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              <span className="brand-title">TURF LIVE</span>
-              <span className="brand-tag">PUBLIC FEED</span>
+            <div className="ott-brand-title-wrap">
+              <span className="ott-brand-title">TURF LIVE</span>
+              <span className="ott-brand-badge">OTT SPORTS</span>
             </div>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-              Open Live Ingestion &bull; 2-Hour Replay Paywall Architecture
+            <p className="ott-brand-tagline">
+              Grassroots Sports Arena &bull; Live Match Broadcasts
             </p>
           </div>
         </div>
 
-        {/* Status Indicators & Test Controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-          {/* Media Server Status */}
-          <div className="player-info-pill" title="MediaMTX Ingestion Gateway">
-            <span style={{ 
-              width: 8, 
-              height: 8, 
-              borderRadius: '50%', 
-              backgroundColor: mediaServerOnline ? '#10b981' : '#f59e0b' 
-            }} />
-            <span style={{ fontSize: '0.75rem' }}>
-              Media Server: {mediaServerOnline ? 'Ready' : 'Standby'}
-            </span>
-          </div>
-
-          {/* Camera Setup Guide Button */}
+        {/* Center: Sports OTT Navigation Links */}
+        <nav className="ott-nav-tabs">
           <button 
-            className="btn btn-secondary btn-sm"
-            onClick={onOpenGuide}
-            title="View camera ingestion recipes (Android, PoE, Pi Cam)"
+            type="button"
+            className={`ott-nav-tab ${activeTab === 'live' ? 'active' : ''}`}
+            onClick={() => onSelectTab('live')}
           >
-            <Cpu size={14} className="text-cyan-400" />
-            <span>Camera Pipeline Guide</span>
+            <Radio size={14} className="tab-icon" />
+            <span>Live Broadcast</span>
           </button>
 
-          {/* Reset Demo Fixtures Button */}
           <button 
-            className="btn btn-secondary btn-sm"
+            type="button"
+            className={`ott-nav-tab ${activeTab === 'map' ? 'active' : ''}`}
+            onClick={() => onSelectTab('map')}
+          >
+            <Compass size={14} className="tab-icon" />
+            <span>Map Radar</span>
+          </button>
+
+          <button 
+            type="button"
+            className={`ott-nav-tab ${activeTab === 'grounds' ? 'active' : ''}`}
+            onClick={() => onSelectTab('grounds')}
+          >
+            <MapPin size={14} className="tab-icon" />
+            <span>Grounds Near Me</span>
+          </button>
+
+          <button 
+            type="button"
+            className={`ott-nav-tab ${activeTab === 'replays' ? 'active' : ''}`}
+            onClick={() => onSelectTab('replays')}
+          >
+            <Film size={14} className="tab-icon" />
+            <span>Replays & VOD</span>
+          </button>
+        </nav>
+
+        {/* Right: VIP Pass & Controls */}
+        <div className="ott-header-actions">
+          {/* Tech Ingestion Guide */}
+          <button 
+            type="button"
+            className="ott-icon-button"
+            onClick={onOpenTechGuide}
+            title="Camera Ingestion & Hardware Specs"
+          >
+            <Cpu size={15} />
+            <span className="btn-label-desktop">Camera Ingest</span>
+          </button>
+
+          {/* Reset Schedule Fixtures Button */}
+          <button 
+            type="button"
+            className="ott-icon-button"
             onClick={onResetFixtures}
-            title="Reset match timestamps relative to now for testing 2hr paywall"
+            title="Refresh match timetable relative to now"
           >
             <RefreshCw size={14} />
-            <span>Reset Demo Clock</span>
           </button>
 
-          {/* Subscriber Simulator Toggle */}
+          {/* All-Access VIP Pass Pill */}
           <button 
+            type="button"
             onClick={onToggleSubscriber}
-            className={`btn btn-sm ${isSubscriber ? 'btn-primary' : 'btn-secondary'}`}
-            style={{ 
-              border: isSubscriber ? '1px solid #10b981' : '1px dashed #64748b',
-              backgroundColor: isSubscriber ? 'rgba(16, 185, 129, 0.2)' : 'transparent',
-              color: isSubscriber ? '#34d399' : '#94a3b8'
-            }}
-            title="Toggle subscriber status to test paywall bypass"
+            className={`ott-pass-button ${isSubscriber ? 'is-active-pass' : ''}`}
+            title="Toggle All-Access subscriber membership"
           >
             {isSubscriber ? <CheckCircle2 size={14} /> : <Zap size={14} />}
-            <span>{isSubscriber ? 'Subscriber Active (Unlocked)' : 'Simulate Subscriber'}</span>
+            <span>{isSubscriber ? 'VIP All-Access Active' : 'Get VIP Pass'}</span>
           </button>
         </div>
       </div>

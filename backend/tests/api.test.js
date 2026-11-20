@@ -136,12 +136,12 @@ async function runTests() {
     assert.strictEqual(res.headers['accept-ranges'], 'bytes');
   });
 
-  // TEST 6: Free download within 2 hours
-  await test('Requirement 2c: Session within 2 hours provides FREE download without token', async () => {
+  // TEST 6: Downloading a video is NOT free (even within the 2-hour window)
+  await test('Requirement 2c: Downloading a video is NOT free without a pass (returns HTTP 403 Paywall)', async () => {
     const res = await request(`/api/archives/${recentArchive.id}/download`);
-    assert.strictEqual(res.statusCode, 200);
-    assert.strictEqual(res.headers['content-type'], 'video/mp4');
-    assert.ok(res.headers['content-disposition'].includes('attachment'));
+    assert.strictEqual(res.statusCode, 403);
+    assert.strictEqual(res.data.error, 'PAYWALL_LOCKED');
+    assert.ok(res.data.message.includes('not free'));
   });
 
   // TEST 7: Paywall blocks playback metadata for sessions older than 2 hours

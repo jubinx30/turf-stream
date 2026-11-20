@@ -1,19 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import Header from './components/Header';
 import LivePlayer from './components/LivePlayer';
+import TurfMapView from './components/TurfMapView';
 import TurfDirectory from './components/TurfDirectory';
 import ReplayArchives from './components/ReplayArchives';
+import TurfBookingModal from './components/TurfBookingModal';
 import PaywallModal from './components/PaywallModal';
 import CameraSetupGuide from './components/CameraSetupGuide';
+import { Compass, Flame, ShieldAlert, Sparkles, Trophy } from 'lucide-react';
 
 export default function App() {
   const [turfs, setTurfs] = useState([]);
   const [activeTurfId, setActiveTurfId] = useState('turf1');
   const [archives, setArchives] = useState([]);
   const [mediaServerOnline, setMediaServerOnline] = useState(false);
+  const [activeTab, setActiveTab] = useState('live');
+  const [selectedSport, setSelectedSport] = useState('all');
+  const [bookingTurf, setBookingTurf] = useState(null);
+  const [isTechGuideOpen, setIsTechGuideOpen] = useState(false);
+
   const [isSubscriber, setIsSubscriber] = useState(() => {
     return localStorage.getItem('turf_is_subscriber') === 'true';
   });
+
   const [unlockedMatchIds, setUnlockedMatchIds] = useState(() => {
     try {
       const saved = localStorage.getItem('turf_unlocked_matches');
@@ -39,7 +48,6 @@ export default function App() {
   });
 
   const [paywallSession, setPaywallSession] = useState(null);
-  const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // Helper to resolve the correct token for any given match
@@ -142,7 +150,51 @@ export default function App() {
     }
   };
 
+  // Filter turfs based on sport selection
+  const filteredTurfs = turfs.filter(t => {
+    if (selectedSport === 'all') return true;
+    return (t.category || t.sport || '').toLowerCase().includes(selectedSport);
+  });
+
   const activeTurf = turfs.find(t => t.id === activeTurfId) || turfs[0];
+
+  // Tab navigation scroll helper
+  const handleSelectTab = (tab) => {
+    setActiveTab(tab);
+    if (tab === 'live') {
+      document.getElementById('live-player-section')?.scrollIntoView({ behavior: 'smooth' });
+    } else if (tab === 'map') {
+      document.getElementById('turf-map-section')?.scrollIntoView({ behavior: 'smooth' });
+    } else if (tab === 'grounds') {
+      document.getElementById('grounds-near-me')?.scrollIntoView({ behavior: 'smooth' });
+    } else if (tab === 'replays') {
+      document.getElementById('match-archives-section')?.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  // Sports category list matching the user reference
+  const sportsCategories = [
+    { 
+      id: 'all', 
+      title: 'ALL SPORTS', 
+      img: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=400&q=80' 
+    },
+    { 
+      id: 'football', 
+      title: 'FOOTBALL', 
+      img: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=400&q=80' 
+    },
+    { 
+      id: 'futsal', 
+      title: 'FUTSAL', 
+      img: 'https://images.unsplash.com/photo-1518091043644-c1d4457512c6?auto=format&fit=crop&w=400&q=80' 
+    },
+    { 
+      id: 'cricket', 
+      title: 'BOX CRICKET', 
+      img: 'https://images.unsplash.com/photo-1531415074968-036ba1b575da?auto=format&fit=crop&w=400&q=80' 
+    }
+  ];
 
   return (
     <div className="app-container">
@@ -150,71 +202,67 @@ export default function App() {
       <Header 
         isSubscriber={isSubscriber}
         onToggleSubscriber={handleToggleSubscriber}
-        onOpenGuide={() => setIsGuideOpen(true)}
         onResetFixtures={handleResetFixtures}
         turfsCount={turfs.length}
         mediaServerOnline={mediaServerOnline}
+        activeTab={activeTab}
+        onSelectTab={handleSelectTab}
+        onOpenTechGuide={() => setIsTechGuideOpen(true)}
       />
 
       {/* Main Body */}
       <main className="main-content">
-        {/* Banner highlighting the 2 core user requirements */}
-        <div style={{
-          background: 'linear-gradient(90deg, rgba(16, 185, 129, 0.1) 0%, rgba(6, 182, 212, 0.1) 100%)',
-          border: '1px solid rgba(16, 185, 129, 0.25)',
-          borderRadius: 12,
-          padding: '0.875rem 1.25rem',
-          marginBottom: '1.5rem',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '0.75rem',
-          fontSize: '0.85rem'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <span style={{ 
-              background: '#10b981', 
-              color: '#042f1a', 
-              fontWeight: 800, 
-              fontSize: '0.7rem', 
-              padding: '0.2rem 0.5rem', 
-              borderRadius: 6 
-            }}>
-              ARCHITECTURE RULES
-            </span>
-            <span style={{ color: '#e2e8f0' }}>
-              <strong>1. Public Live Feed:</strong> 100% free streaming for anyone, zero login/booking required.
-              &bull; 
-              <strong>2. Paywall:</strong> Replays older than 2 hours require pass/subscription.
-            </span>
+        {/* Choose Your Sport Carousel (User Reference Image Style) */}
+        <section className="choose-sport-section">
+          <div className="section-title-subtle">
+            <Trophy size={14} className="text-lime" />
+            <span>Choose your sport</span>
           </div>
 
-          <div style={{ color: '#38bdf8', fontSize: '0.75rem', fontWeight: 600 }}>
-            Camera Agnostic Pipeline &bull; MediaMTX Normalizer
+          <div className="sport-cards-row">
+            {sportsCategories.map((cat) => {
+              const isActive = selectedSport === cat.id;
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  className={`sport-category-card ${isActive ? 'active' : ''}`}
+                  onClick={() => setSelectedSport(cat.id)}
+                >
+                  <img src={cat.img} alt={cat.title} className="sport-card-bg" />
+                  <div className="sport-card-overlay" />
+                  <span className="sport-card-text">{cat.title}</span>
+                </button>
+              );
+            })}
           </div>
-        </div>
+        </section>
 
-        {/* Live Stage & Turf Directory Grid */}
-        <div className="grid-layout">
-          <div>
-            <LivePlayer 
-              activeTurf={activeTurf} 
-              isMediaServerOnline={mediaServerOnline}
-              onOpenGuide={() => setIsGuideOpen(true)}
-            />
-          </div>
+        {/* Live Sports OTT Player & TV Channel Switcher Bar */}
+        <LivePlayer 
+          activeTurf={activeTurf}
+          turfs={filteredTurfs.length ? filteredTurfs : turfs}
+          onSelectTurf={setActiveTurfId}
+          isMediaServerOnline={mediaServerOnline}
+        />
 
-          <div>
-            <TurfDirectory 
-              turfs={turfs}
-              activeTurfId={activeTurfId}
-              onSelectTurf={setActiveTurfId}
-            />
-          </div>
-        </div>
+        {/* Interactive Map View Section with Markers */}
+        <TurfMapView 
+          turfs={turfs}
+          activeTurfId={activeTurfId}
+          onSelectTurf={setActiveTurfId}
+          onBookTurf={(turf) => setBookingTurf(turf)}
+        />
 
-        {/* Match Archives & 2-Hour Paywalled Replays */}
+        {/* Grounds Near Me Section (Matching Reference Style) */}
+        <TurfDirectory 
+          turfs={filteredTurfs.length ? filteredTurfs : turfs}
+          activeTurfId={activeTurfId}
+          onSelectTurf={setActiveTurfId}
+          onBookTurf={(turf) => setBookingTurf(turf)}
+        />
+
+        {/* Match Archives & Replays (VOD) */}
         <ReplayArchives 
           archives={archives}
           onTriggerPaywall={(session) => setPaywallSession(session)}
@@ -223,6 +271,17 @@ export default function App() {
           getTokenForMatch={getTokenForMatch}
         />
       </main>
+
+      {/* Slot Booking Sheet / Modal (Matches User Reference Image) */}
+      <TurfBookingModal 
+        turf={bookingTurf}
+        isOpen={Boolean(bookingTurf)}
+        onClose={() => setBookingTurf(null)}
+        onSelectLive={(turfId) => {
+          setActiveTurfId(turfId);
+          document.getElementById('live-player-section')?.scrollIntoView({ behavior: 'smooth' });
+        }}
+      />
 
       {/* Paywall Checkout Modal */}
       {paywallSession && (
@@ -233,10 +292,10 @@ export default function App() {
         />
       )}
 
-      {/* Camera Pipeline Architecture Guide Modal */}
+      {/* Hardware / Ingestion Tech Architecture Guide */}
       <CameraSetupGuide 
-        isOpen={isGuideOpen}
-        onClose={() => setIsGuideOpen(false)}
+        isOpen={isTechGuideOpen}
+        onClose={() => setIsTechGuideOpen(false)}
       />
     </div>
   );

@@ -61,9 +61,13 @@ export default function PaywallModal({ session, onClose, onUnlockSuccess }) {
               <Lock size={20} className="text-amber-400" />
             </div>
             <div>
-              <h3 style={{ fontSize: '1.2rem', fontWeight: 800 }}>Match Replay Paywall</h3>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 800 }}>
+                {session.requiredFor === 'download' ? 'Match Download Pass' : 'Unlock Match Replay & Download'}
+              </h3>
               <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                This session ended {session.ageMinutes} minutes ago (&gt; 2-hour free threshold)
+                {session.requiredFor === 'download' 
+                  ? 'High-definition full match MP4 recording' 
+                  : `${session.title} • Full Match Replay`}
               </p>
             </div>
           </div>
@@ -74,11 +78,11 @@ export default function PaywallModal({ session, onClose, onUnlockSuccess }) {
 
         {/* Body */}
         <div className="modal-body">
-          {/* Paywall policy notice */}
+          {/* Access policy notice */}
           <div className="notice-box">
             <Shield size={18} className="text-blue-400" style={{ flexShrink: 0, marginTop: 2 }} />
             <div>
-              <strong>Fair Monetization Rule:</strong> Turf Live live feeds are 100% free for everyone. Replays remain free for the first 2 hours after a match. After 2 hours, archive servers require a pass to replay and download.
+              <strong>Fan Access:</strong> Live pitch streams are 100% free for all sports fans! Full match video downloads and classic match archives require a Match Pass or All-Access Pass.
             </div>
           </div>
 
@@ -94,13 +98,13 @@ export default function PaywallModal({ session, onClose, onUnlockSuccess }) {
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
                 <span style={{ fontWeight: 700, fontSize: '1rem', color: '#ffffff' }}>Single Match Pass</span>
-                <span className="badge badge-locked">This Match Only</span>
+                <span className="badge badge-locked">This Match</span>
               </div>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                 Full 1080p replay + high-speed MP4 download for <em>{session.title}</em>.
               </p>
               <div style={{ fontSize: '0.75rem', color: '#34d399', marginTop: '0.4rem', fontWeight: 600 }}>
-                &bull; 7 days unlimited viewing for this match
+                &bull; 7 days unlimited replay & permanent video download
               </div>
             </div>
             <div style={{ textAlign: 'right' }}>
@@ -123,7 +127,7 @@ export default function PaywallModal({ session, onClose, onUnlockSuccess }) {
                 Unlimited access to ALL live broadcasts, past tournament replays, and match downloads.
               </p>
               <div style={{ fontSize: '0.75rem', color: '#c084fc', marginTop: '0.4rem', fontWeight: 600 }}>
-                &bull; Unlocks all turfs & archives instantly
+                &bull; Unlocks all turfs & match downloads
               </div>
             </div>
             <div style={{ textAlign: 'right' }}>
@@ -135,7 +139,7 @@ export default function PaywallModal({ session, onClose, onUnlockSuccess }) {
           {/* Payment Method selector */}
           <div>
             <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '0.5rem' }}>
-              Simulated Payment Method:
+              Select Payment Method:
             </label>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               {['card', 'upi', 'apple_pay'].map((method) => (
@@ -177,11 +181,11 @@ export default function PaywallModal({ session, onClose, onUnlockSuccess }) {
             disabled={processing}
           >
             {processing ? (
-              <span>Simulating Payment Gateway...</span>
+              <span>Processing Payment...</span>
             ) : (
               <>
                 <Zap size={16} />
-                <span>Simulate Pay & Unlock ({selectedPlan === 'single_match' ? '$1.99' : '$9.99/mo'})</span>
+                <span>Unlock Now ({selectedPlan === 'single_match' ? '$1.99' : '$9.99/mo'})</span>
               </>
             )}
           </button>

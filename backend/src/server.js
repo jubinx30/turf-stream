@@ -115,23 +115,28 @@ function handleGetArchives(req, res) {
 
   // Annotate if current request has unlocked access
   const enriched = archives.map(archive => {
-    let hasAccess = false;
+    let hasPlaybackAccess = false;
+    let hasDownloadAccess = false;
     let accessReason = 'none';
 
     if (!archive.isOlderThan2Hours) {
-      hasAccess = true;
+      hasPlaybackAccess = true;
       accessReason = 'free_window';
-    } else if (token) {
+    }
+
+    if (token) {
       const verify = paymentService.verifyAccess(token, archive.id);
       if (verify.authorized) {
-        hasAccess = true;
+        hasPlaybackAccess = true;
+        hasDownloadAccess = true;
         accessReason = verify.planType || 'paid';
       }
     }
 
     return {
       ...archive,
-      hasAccess,
+      hasAccess: hasPlaybackAccess,
+      hasDownloadAccess,
       accessReason,
       streamUrl: `/api/archives/${archive.id}/stream`,
       playbackEndpoint: `/api/archives/${archive.id}/playback`,
@@ -168,16 +173,20 @@ app.get('/api/archives/:id', (req, res) => {
   }
 
   const token = req.headers.authorization || req.query.token;
-  let hasAccess = false;
+  let hasPlaybackAccess = false;
+  let hasDownloadAccess = false;
   let accessReason = 'none';
 
   if (!archive.isOlderThan2Hours) {
-    hasAccess = true;
+    hasPlaybackAccess = true;
     accessReason = 'free_window';
-  } else if (token) {
+  }
+
+  if (token) {
     const verify = paymentService.verifyAccess(token, archive.id);
     if (verify.authorized) {
-      hasAccess = true;
+      hasPlaybackAccess = true;
+      hasDownloadAccess = true;
       accessReason = verify.planType || 'paid';
     }
   }
@@ -186,7 +195,8 @@ app.get('/api/archives/:id', (req, res) => {
     success: true,
     data: {
       ...archive,
-      hasAccess,
+      hasAccess: hasPlaybackAccess,
+      hasDownloadAccess,
       accessReason,
       streamUrl: `/api/archives/${archive.id}/stream`,
       playbackEndpoint: `/api/archives/${archive.id}/playback`,
@@ -197,8 +207,7 @@ app.get('/api/archives/:id', (req, res) => {
 
 /**
  * GET /api/archives/:id/playback
- * ENFORCES THE 2-HOUR PAYWALL RULE FOR METADATA:
- * 1. If session ended within 2 hours: Free for everyone.
+ * 1. If session ended within 2 hours: Free live replay for sports fans.
  * 2. If session ended > 2 hours ago: Requires Single Match Pass or Subscription token.
  */
 app.get('/api/archives/:id/playback', (req, res) => {
@@ -313,9 +322,8 @@ app.get('/api/archives/:id/stream', (req, res) => {
 
 /**
  * GET /api/archives/:id/download
- * ENFORCES THE SAME 2-HOUR PAYWALL RULE FOR DOWNLOADS:
- * 1. If session ended within 2 hours: Free download for everyone.
- * 2. If session ended > 2 hours ago: Requires valid pass or subscription.
+ * DOWNLOADING MATCH RECORDINGS IS A PAID FEATURE (NOT FREE):
+ * Requires a valid Single Match Pass or All-Access Subscription token.
  */
 app.get('/api/archives/:id/download', (req, res) => {
   const archive = db.getArchiveById(req.params.id);
@@ -325,18 +333,31 @@ app.get('/api/archives/:id/download', (req, res) => {
 
   const token = req.headers.authorization || req.query.token;
 
-  // Paywall check if older than 2 hours
-  if (archive.isOlderThan2Hours) {
-    const verification = paymentService.verifyAccess(token, archive.id);
-    if (!verification.authorized) {
-      return res.status(403).json({
-        success: false,
-        error: 'PAYWALL_LOCKED',
-        message: 'Download restricted: This recording is older than 2 hours. A pass or subscription is required to download.',
-        archiveId: archive.id,
-        isOlderThan2Hours: true
-      });
-    }
+  // Downloading a video is never free; requires active pass or subscription
+  const verification = paymentService.verifyAccess(token, archive.id);
+  if (!verification.authorized) {
+    return res.status(403).json({
+      success: false,
+      error: 'PAYWALL_LOCKED',
+      message: 'Downloading match video recordings is not free. A Single Match Pass or All-Access Subscription is required to download.',
+      archiveId: archive.id,
+      isOlderThan2Hours: archive.isOlderThan2Hours,
+      pricing: {
+        singleMatch: {
+          id: 'single_match',
+          name: 'Single Match Replay & Download Pass',
+          price: 1.99,
+          currency: 'USD'
+        },
+        subscription: {
+          id: 'subscription',
+          name: 'All-Access Turf Pass',
+          price: 9.99,
+          currency: 'USD',
+          period: 'month'
+        }
+      }
+    });
   }
 
   const filePath = path.join(config.recordingsDir, archive.fileName);
