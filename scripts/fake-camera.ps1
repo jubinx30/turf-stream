@@ -1,6 +1,6 @@
 param (
     [string]$TurfId = "turf1",
-    [string]$VideoFile = ""
+    [string]$VideoFile = (Join-Path $PSScriptRoot "sample-feed.mp4")
 )
 
 $targetUrl = "rtsp://localhost:8554/$TurfId"

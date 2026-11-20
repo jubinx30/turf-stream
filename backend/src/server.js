@@ -101,6 +101,24 @@ app.get('/api/turfs/:id/live', async (req, res) => {
   });
 });
 
+app.get('/api/recordings/demo-stream.mp4', (req, res) => {
+  const filePath = path.join(config.recordingsDir, 'demo-stream.mp4');
+  if (fs.existsSync(filePath)) {
+    res.setHeader('Content-Type', 'video/mp4');
+    return res.sendFile(filePath, { acceptRanges: true });
+  }
+  return res.status(404).json({ success: false, error: 'Demo stream clip not found' });
+});
+
+app.get('/sample-feed.mp4', (req, res) => {
+  const filePath = path.join(__dirname, '../public/sample-feed.mp4');
+  if (fs.existsSync(filePath)) {
+    res.setHeader('Content-Type', 'video/mp4');
+    return res.sendFile(filePath, { acceptRanges: true });
+  }
+  return res.status(404).send('Not found');
+});
+
 // -------------------------------------------------------------
 // 2. REPLAY & ARCHIVES WITH 2-HOUR PAYWALL RULE
 // -------------------------------------------------------------

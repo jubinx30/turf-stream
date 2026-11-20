@@ -26,7 +26,8 @@ function getArg(flag, defaultValue) {
 
 const turfId = getArg('--turf', 'turf1');
 const rtspServer = getArg('--rtsp', 'rtsp://localhost:8554');
-const videoFile = getArg('--video', null);
+const defaultVideoFile = path.join(__dirname, 'sample-feed.mp4');
+const videoFile = getArg('--video', fs.existsSync(defaultVideoFile) ? defaultVideoFile : null);
 const targetUrl = `${rtspServer}/${turfId}`;
 
 console.log(`===============================================`);
@@ -34,7 +35,7 @@ console.log(`   TURF LIVE - Synthetic Camera Simulator`);
 console.log(`===============================================`);
 console.log(`Target Stream : ${targetUrl}`);
 console.log(`Turf ID       : ${turfId}`);
-if (videoFile) {
+if (videoFile && fs.existsSync(videoFile)) {
   console.log(`Source Video  : ${videoFile} (Looping)`);
 } else {
   console.log(`Source        : Dynamic Sports Match Graphics & Clock`);
@@ -51,13 +52,8 @@ if (videoFile && fs.existsSync(videoFile)) {
     '-c:v', 'libx264',
     '-preset', 'veryfast',
     '-tune', 'zerolatency',
-    '-b:v', '2000k',
-    '-maxrate', '2500k',
-    '-bufsize', '4000k',
     '-pix_fmt', 'yuv420p',
     '-c:a', 'aac',
-    '-b:a', '128k',
-    '-ar', '44100',
     '-f', 'rtsp',
     '-rtsp_transport', 'tcp',
     targetUrl

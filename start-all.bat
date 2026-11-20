@@ -13,8 +13,8 @@ echo [2/3] Launching Backend Server (http://localhost:4000)...
 start "Turf Live Backend" /d "%~dp0" node backend/src/server.js
 ping 127.0.0.1 -n 3 >nul
 
-echo [3/3] Launching Synthetic Camera Generator...
-start "Turf 1 Camera Simulator" /d "%~dp0" node scripts/simulate-camera.js --turf turf1
+echo [3/3] Launching Match Camera Simulator...
+start "Turf 1 Camera Simulator" /d "%~dp0" node scripts/simulate-camera.js --turf turf1 --video scripts/sample-feed.mp4
 
 echo.
 echo All services launched!

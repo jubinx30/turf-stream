@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 TURF_ID=${1:-turf1}
-VIDEO_FILE=$2
+DEFAULT_VIDEO="$(cd "$(dirname "$0")" && pwd)/sample-feed.mp4"
+VIDEO_FILE=${2:-$DEFAULT_VIDEO}
 TARGET_URL="rtsp://localhost:8554/${TURF_ID}"
 
 echo "==============================================="

@@ -43,7 +43,6 @@ export default function TurfBookingModal({ turf, isOpen, onClose, onSelectLive }
         onClick={(e) => e.stopPropagation()}
         style={{ maxWidth: '480px', width: '92%' }}
       >
-        {/* Pitch Hero Image & Close */}
         <div className="booking-hero">
           <img 
             src={turf.image || 'https://images.unsplash.com/photo-1529900241454-946a3628e93d?auto=format&fit=crop&w=800&q=80'} 
@@ -76,7 +75,6 @@ export default function TurfBookingModal({ turf, isOpen, onClose, onSelectLive }
           </div>
         </div>
 
-        {/* Modal Body */}
         <div className="modal-body" style={{ padding: '1.25rem 1.5rem', gap: '1.25rem' }}>
           {bookedSuccess ? (
             <div className="booking-success-box">
@@ -113,7 +111,6 @@ export default function TurfBookingModal({ turf, isOpen, onClose, onSelectLive }
             </div>
           ) : (
             <>
-              {/* Amenities Section */}
               <div className="booking-section">
                 <label className="section-label">Amenities</label>
                 <div className="amenities-pills">
@@ -125,7 +122,6 @@ export default function TurfBookingModal({ turf, isOpen, onClose, onSelectLive }
                 </div>
               </div>
 
-              {/* Date Selector */}
               <div className="booking-section">
                 <div className="section-header-flex">
                   <label className="section-label">
@@ -152,7 +148,6 @@ export default function TurfBookingModal({ turf, isOpen, onClose, onSelectLive }
                 </div>
               </div>
 
-              {/* Time Slot Selector */}
               <div className="booking-section">
                 <label className="section-label">
                   <Clock size={13} style={{ display: 'inline', marginRight: 4 }} />
@@ -175,7 +170,6 @@ export default function TurfBookingModal({ turf, isOpen, onClose, onSelectLive }
                 </div>
               </div>
 
-              {/* Price & Book Button Bar */}
               <div className="booking-action-bar">
                 <div>
                   <div className="price-sub">Hourly Rate</div>
@@ -198,3 +192,4 @@ export default function TurfBookingModal({ turf, isOpen, onClose, onSelectLive }
     </div>
   );
 }
+

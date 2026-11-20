@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Header from './components/Header';
 import LivePlayer from './components/LivePlayer';
 import TurfMapView from './components/TurfMapView';
@@ -7,7 +7,7 @@ import ReplayArchives from './components/ReplayArchives';
 import TurfBookingModal from './components/TurfBookingModal';
 import PaywallModal from './components/PaywallModal';
 import CameraSetupGuide from './components/CameraSetupGuide';
-import { Compass, Flame, ShieldAlert, Sparkles, Trophy } from 'lucide-react';
+import { Trophy, Radio, Film, MapPin, Compass, Shield, Cpu, RefreshCw, Search, X } from 'lucide-react';
 
 export default function App() {
   const [turfs, setTurfs] = useState([]);
@@ -16,6 +16,9 @@ export default function App() {
   const [mediaServerOnline, setMediaServerOnline] = useState(false);
   const [activeTab, setActiveTab] = useState('live');
   const [selectedSport, setSelectedSport] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false);
+  const searchBoxRef = useRef(null);
   const [bookingTurf, setBookingTurf] = useState(null);
   const [isTechGuideOpen, setIsTechGuideOpen] = useState(false);
 
@@ -32,7 +35,6 @@ export default function App() {
     }
   });
 
-  // Store individual match tokens to prevent one match pass from overwriting another
   const [matchTokens, setMatchTokens] = useState(() => {
     try {
       const saved = localStorage.getItem('turf_match_tokens');
@@ -42,7 +44,6 @@ export default function App() {
     }
   });
 
-  // Store monthly all-access subscription token
   const [subscriptionToken, setSubscriptionToken] = useState(() => {
     return localStorage.getItem('turf_sub_token') || '';
   });
@@ -50,7 +51,6 @@ export default function App() {
   const [paywallSession, setPaywallSession] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Helper to resolve the correct token for any given match
   const getTokenForMatch = (matchId) => {
     if (subscriptionToken) return subscriptionToken;
     if (isSubscriber) return 'SIMULATED_ACTIVE_SUBSCRIBER';
@@ -58,7 +58,6 @@ export default function App() {
     return null;
   };
 
-  // Fetch turfs and media status
   const loadTurfs = async () => {
     try {
       const res = await fetch('/api/turfs');
@@ -72,7 +71,6 @@ export default function App() {
     }
   };
 
-  // Fetch archives with token if available
   const loadArchives = async () => {
     try {
       const token = subscriptionToken || (isSubscriber ? 'SIMULATED_ACTIVE_SUBSCRIBER' : '');
@@ -95,7 +93,6 @@ export default function App() {
     };
     init();
 
-    // Periodic refresh every 5 seconds to track live ingestion and countdowns
     const interval = setInterval(() => {
       loadTurfs();
       loadArchives();
@@ -104,7 +101,6 @@ export default function App() {
     return () => clearInterval(interval);
   }, [subscriptionToken, isSubscriber]);
 
-  // Toggle subscriber mode (for easy reviewer testing)
   const handleToggleSubscriber = () => {
     const nextState = !isSubscriber;
     setIsSubscriber(nextState);
@@ -115,7 +111,6 @@ export default function App() {
     }
   };
 
-  // Paywall checkout completed
   const handleUnlockSuccess = ({ planType, archiveId, token }) => {
     if (planType === 'subscription') {
       setSubscriptionToken(token);
@@ -140,7 +135,6 @@ export default function App() {
     loadArchives();
   };
 
-  // Reset fixtures relative to current time
   const handleResetFixtures = async () => {
     try {
       await fetch('/api/turfs/reset-demo', { method: 'POST' });
@@ -150,15 +144,36 @@ export default function App() {
     }
   };
 
-  // Filter turfs based on sport selection
+  // Close search dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (searchBoxRef.current && !searchBoxRef.current.contains(event.target)) {
+        setIsSearchDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const filteredTurfs = turfs.filter(t => {
-    if (selectedSport === 'all') return true;
-    return (t.category || t.sport || '').toLowerCase().includes(selectedSport);
+    const matchesSport = selectedSport === 'all' || 
+      (t.category || t.sport || '').toLowerCase().includes(selectedSport);
+    const query = searchQuery.trim().toLowerCase();
+    const matchesSearch = !query || 
+      (t.name && t.name.toLowerCase().includes(query)) ||
+      (t.location && t.location.toLowerCase().includes(query));
+    return matchesSport && matchesSearch;
   });
 
-  const activeTurf = turfs.find(t => t.id === activeTurfId) || turfs[0];
+  const activeTurf = filteredTurfs.find(t => t.id === activeTurfId) || 
+    filteredTurfs[0] || 
+    turfs.find(t => t.id === activeTurfId) || 
+    turfs[0];
 
-  // Tab navigation scroll helper
+  const searchDropdownTurfs = searchQuery.trim()
+    ? turfs.filter(t => t.name.toLowerCase().includes(searchQuery.trim().toLowerCase()))
+    : [];
+
   const handleSelectTab = (tab) => {
     setActiveTab(tab);
     if (tab === 'live') {
@@ -172,34 +187,17 @@ export default function App() {
     }
   };
 
-  // Sports category list matching the user reference
-  const sportsCategories = [
-    { 
-      id: 'all', 
-      title: 'ALL SPORTS', 
-      img: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=400&q=80' 
-    },
-    { 
-      id: 'football', 
-      title: 'FOOTBALL', 
-      img: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=400&q=80' 
-    },
-    { 
-      id: 'futsal', 
-      title: 'FUTSAL', 
-      img: 'https://images.unsplash.com/photo-1518091043644-c1d4457512c6?auto=format&fit=crop&w=400&q=80' 
-    },
-    { 
-      id: 'cricket', 
-      title: 'BOX CRICKET', 
-      img: 'https://images.unsplash.com/photo-1531415074968-036ba1b575da?auto=format&fit=crop&w=400&q=80' 
-    }
+  const sportsFilters = [
+    { id: 'all', label: 'All Sports' },
+    { id: 'football', label: '⚽ Football' },
+    { id: 'futsal', label: '⚡ Futsal' },
+    { id: 'cricket', label: '🏏 Box Cricket' }
   ];
 
   return (
-    <div className="app-container">
-      {/* Navigation Header */}
-      <Header 
+    <div className="ott-app-root">
+      {/* Sleek Top Navigation */}
+      <Header
         isSubscriber={isSubscriber}
         onToggleSubscriber={handleToggleSubscriber}
         onResetFixtures={handleResetFixtures}
@@ -208,72 +206,210 @@ export default function App() {
         activeTab={activeTab}
         onSelectTab={handleSelectTab}
         onOpenTechGuide={() => setIsTechGuideOpen(true)}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
       />
 
-      {/* Main Body */}
-      <main className="main-content">
-        {/* Choose Your Sport Carousel (User Reference Image Style) */}
-        <section className="choose-sport-section">
-          <div className="section-title-subtle">
-            <Trophy size={14} className="text-lime" />
-            <span>Choose your sport</span>
-          </div>
-
-          <div className="sport-cards-row">
-            {sportsCategories.map((cat) => {
-              const isActive = selectedSport === cat.id;
-              return (
+      {/* Main Content Area */}
+      <main className="ott-main-content">
+        {/* Home Screen Search & Filter Toolbar */}
+        <div className="ott-home-toolbar">
+          {/* Prominent Turf Name Search Bar */}
+          <div className="ott-search-bar-wrap" ref={searchBoxRef}>
+            <div className="ott-search-input-box">
+              <Search size={17} className="ott-search-icon" />
+              <input
+                type="text"
+                className="ott-search-input"
+                placeholder="Search turfs by name (e.g. Greenfield, Vanguard, Apex...)"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setIsSearchDropdownOpen(true);
+                }}
+                onFocus={() => setIsSearchDropdownOpen(true)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') {
+                    setIsSearchDropdownOpen(false);
+                  } else if (e.key === 'Enter' && filteredTurfs.length > 0) {
+                    setActiveTurfId(filteredTurfs[0].id);
+                    setIsSearchDropdownOpen(false);
+                    document.getElementById('live-player-section')?.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }}
+              />
+              {searchQuery && (
                 <button
-                  key={cat.id}
                   type="button"
-                  className={`sport-category-card ${isActive ? 'active' : ''}`}
-                  onClick={() => setSelectedSport(cat.id)}
+                  className="ott-search-clear-btn"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setIsSearchDropdownOpen(false);
+                  }}
+                  title="Clear search"
+                  aria-label="Clear search"
                 >
-                  <img src={cat.img} alt={cat.title} className="sport-card-bg" />
-                  <div className="sport-card-overlay" />
-                  <span className="sport-card-text">{cat.title}</span>
+                  <X size={15} />
                 </button>
-              );
-            })}
-          </div>
-        </section>
+              )}
+            </div>
 
-        {/* Live Sports OTT Player & TV Channel Switcher Bar */}
-        <LivePlayer 
+            {/* Quick Autocomplete Suggestions Dropdown */}
+            {isSearchDropdownOpen && searchQuery.trim().length > 0 && (
+              <div className="ott-search-dropdown-menu">
+                {searchDropdownTurfs.length > 0 ? (
+                  searchDropdownTurfs.map((turf) => (
+                    <div
+                      key={turf.id}
+                      className="ott-search-dropdown-row"
+                      onClick={() => {
+                        setActiveTurfId(turf.id);
+                        setSearchQuery(turf.name);
+                        setIsSearchDropdownOpen(false);
+                        document.getElementById('live-player-section')?.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                    >
+                      <img 
+                        src={turf.image || 'https://images.unsplash.com/photo-1529900241454-946a3628e93d?auto=format&fit=crop&w=400&q=80'} 
+                        alt={turf.name}
+                        className="ott-search-thumb" 
+                      />
+                      <div className="ott-search-details">
+                        <div className="ott-search-name-row">
+                          <span className="ott-search-name">{turf.name}</span>
+                          {turf.isLive && (
+                            <span className="ott-search-live-badge">LIVE</span>
+                          )}
+                        </div>
+                        <span className="ott-search-sub">
+                          {turf.sport} &bull; {turf.location}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="ott-search-empty-dropdown">
+                    No turfs matching "{searchQuery}"
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Quick Sport Selector Bar (Clean Hotstar / Sony LIV style) */}
+          <div className="ott-sport-category-bar">
+            <div className="sport-pills-row">
+              {sportsFilters.map((cat) => {
+                const isActive = selectedSport === cat.id;
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    className={`sport-pill-btn ${isActive ? 'active' : ''}`}
+                    onClick={() => setSelectedSport(cat.id)}
+                  >
+                    <span>{cat.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Active Search Results Indicator */}
+        {searchQuery.trim() && (
+          <div className="ott-search-status-bar">
+            <span>
+              Search results for "<strong>{searchQuery}</strong>" ({filteredTurfs.length} {filteredTurfs.length === 1 ? 'venue' : 'venues'} found)
+            </span>
+            <button
+              type="button"
+              className="ott-search-reset-link"
+              onClick={() => setSearchQuery('')}
+            >
+              Reset Search
+            </button>
+          </div>
+        )}
+
+        {/* Hero Live Broadcast Stage & Channels Switcher */}
+        <LivePlayer
           activeTurf={activeTurf}
-          turfs={filteredTurfs.length ? filteredTurfs : turfs}
+          turfs={filteredTurfs}
           onSelectTurf={setActiveTurfId}
           isMediaServerOnline={mediaServerOnline}
-        />
-
-        {/* Interactive Map View Section with Markers */}
-        <TurfMapView 
-          turfs={turfs}
-          activeTurfId={activeTurfId}
-          onSelectTurf={setActiveTurfId}
-          onBookTurf={(turf) => setBookingTurf(turf)}
-        />
-
-        {/* Grounds Near Me Section (Matching Reference Style) */}
-        <TurfDirectory 
-          turfs={filteredTurfs.length ? filteredTurfs : turfs}
-          activeTurfId={activeTurfId}
-          onSelectTurf={setActiveTurfId}
           onBookTurf={(turf) => setBookingTurf(turf)}
         />
 
         {/* Match Archives & Replays (VOD) */}
-        <ReplayArchives 
+        <ReplayArchives
           archives={archives}
           onTriggerPaywall={(session) => setPaywallSession(session)}
           isSubscriber={isSubscriber}
           unlockedMatchIds={unlockedMatchIds}
           getTokenForMatch={getTokenForMatch}
         />
+
+        {/* Turf Arenas & Grounds Directory */}
+        <TurfDirectory
+          turfs={filteredTurfs}
+          activeTurfId={activeTurfId}
+          onSelectTurf={setActiveTurfId}
+          onBookTurf={(turf) => setBookingTurf(turf)}
+          searchQuery={searchQuery}
+          onClearSearch={() => setSearchQuery('')}
+        />
+
+        {/* Turf Radar (Map View) */}
+        <TurfMapView 
+          turfs={filteredTurfs.length > 0 ? filteredTurfs : (searchQuery.trim() ? [] : turfs)}
+          activeTurfId={activeTurfId}
+          onSelectTurf={setActiveTurfId}
+          onBookTurf={(turf) => setBookingTurf(turf)}
+        />
       </main>
 
-      {/* Slot Booking Sheet / Modal (Matches User Reference Image) */}
-      <TurfBookingModal 
+      {/* Standard OTT Footer */}
+      <footer className="ott-footer">
+        <div className="ott-footer-inner">
+          <div className="footer-brand">
+            <div className="footer-logo">
+              <span className="logo-turf">TURF</span>
+              <span className="logo-live-badge">LIVE</span>
+            </div>
+            <p className="footer-tagline">
+              Grassroots Sports OTT Streaming Platform. Watch live local matches, replays, and book premium arena slots.
+            </p>
+          </div>
+
+          <div className="footer-links-group">
+            <h4 className="footer-title">Browse</h4>
+            <button type="button" onClick={() => handleSelectTab('live')} className="footer-link">Live Stream</button>
+            <button type="button" onClick={() => handleSelectTab('replays')} className="footer-link">Match Replays</button>
+            <button type="button" onClick={() => handleSelectTab('grounds')} className="footer-link">Grounds & Turfs</button>
+            <button type="button" onClick={() => handleSelectTab('map')} className="footer-link">Turf Radar</button>
+          </div>
+
+          <div className="footer-links-group">
+            <h4 className="footer-title">For Turf Operators</h4>
+            <button type="button" onClick={() => setIsTechGuideOpen(true)} className="footer-link">
+              Camera Setup & Ingestion
+            </button>
+            <button type="button" onClick={handleResetFixtures} className="footer-link">
+              Reset Demo Fixtures
+            </button>
+          </div>
+        </div>
+        <div className="footer-bottom">
+          <span>&copy; {new Date().getFullYear()} TurfLive OTT. All rights reserved.</span>
+          <span className="footer-status-pill">
+            System: {mediaServerOnline ? '🟢 Streaming Online' : '🟡 Standby'}
+          </span>
+        </div>
+      </footer>
+
+      {/* Slot Booking Sheet / Modal */}
+      <TurfBookingModal
         turf={bookingTurf}
         isOpen={Boolean(bookingTurf)}
         onClose={() => setBookingTurf(null)}
@@ -285,7 +421,7 @@ export default function App() {
 
       {/* Paywall Checkout Modal */}
       {paywallSession && (
-        <PaywallModal 
+        <PaywallModal
           session={paywallSession}
           onClose={() => setPaywallSession(null)}
           onUnlockSuccess={handleUnlockSuccess}
@@ -293,7 +429,7 @@ export default function App() {
       )}
 
       {/* Hardware / Ingestion Tech Architecture Guide */}
-      <CameraSetupGuide 
+      <CameraSetupGuide
         isOpen={isTechGuideOpen}
         onClose={() => setIsTechGuideOpen(false)}
       />

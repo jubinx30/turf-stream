@@ -30,8 +30,8 @@ Start-Process -FilePath "node" -ArgumentList "backend/src/server.js" -WorkingDir
 Start-Sleep -Seconds 2
 
 # 3. Launch Simulated Sports Camera
-Write-Host "[3/3] Launching Synthetic Camera Generator for Turf 1..." -ForegroundColor Cyan
-Start-Process -FilePath "node" -ArgumentList "scripts/simulate-camera.js --turf turf1" -WorkingDirectory $ScriptDir
+Write-Host "[3/3] Launching Simulated Match Camera Stream for Turf 1..." -ForegroundColor Cyan
+Start-Process -FilePath "node" -ArgumentList "scripts/simulate-camera.js --turf turf1 --video scripts/sample-feed.mp4" -WorkingDirectory $ScriptDir
 
 Write-Host "`nAll services launched!" -ForegroundColor Green
 Write-Host "-> Web Application : http://localhost:4000" -ForegroundColor White

@@ -12,11 +12,11 @@ import {
 } from 'lucide-react';
 
 export default function ReplayArchives({ 
-  archives, 
+  archives = [], 
   onTriggerPaywall, 
   isSubscriber, 
   unlockedMatchIds = new Set(),
-  getTokenForMatch 
+  getTokenForMatch
 }) {
   const [selectedFilter, setSelectedFilter] = useState('all'); // 'all', 'free', 'paywalled'
   const [activeReplaySession, setActiveReplaySession] = useState(null);
@@ -31,7 +31,7 @@ export default function ReplayArchives({
 
   const handleWatchReplay = async (session) => {
     const isUnlocked = isSubscriber || unlockedMatchIds.has(session.id) || !session.isOlderThan2Hours;
-    
+
     if (!isUnlocked) {
       onTriggerPaywall(session);
       return;
@@ -65,7 +65,7 @@ export default function ReplayArchives({
 
   const handleDownload = (session) => {
     const hasPaidAccess = isSubscriber || unlockedMatchIds.has(session.id);
-    
+
     if (!hasPaidAccess) {
       onTriggerPaywall({ ...session, requiredFor: 'download' });
       return;
@@ -87,128 +87,140 @@ export default function ReplayArchives({
   };
 
   return (
-    <div className="ott-vod-section" id="match-archives-section">
-      <div className="grounds-section-header">
-        <div>
-          <div className="ott-section-badge">
-            <Film size={13} className="text-lime" />
-            <span>VOD & MATCH VAULT</span>
+    <section className="ott-section" id="match-archives-section">
+      {/* Section Header */}
+      <div className="ott-section-header">
+        <div className="section-title-wrap">
+          <div className="section-badge-pill">
+            <Film size={13} className="text-blue" />
+            <span>MATCH REPLAYS & VOD</span>
           </div>
-          <h2 className="ott-section-title">Replays & Match Highlights</h2>
-          <p className="ott-section-sub">
-            Public matches include full 2-hour free replay following the final whistle. Archive downloads & classic recordings require a Match Pass.
+          <h2 className="section-heading">Catch Up On Past Matches</h2>
+          <p className="section-subheading">
+            Watch recent match replays free within 2 hours. Full match downloads & archives available with VIP Pass.
           </p>
         </div>
 
         {/* Filter Pills */}
-        <div className="ott-sport-filter-pills">
-          <button 
+        <div className="ott-filter-tabs">
+          <button
             type="button"
-            className={`ott-filter-pill ${selectedFilter === 'all' ? 'active' : ''}`}
+            className={`filter-tab-pill ${selectedFilter === 'all' ? 'active' : ''}`}
             onClick={() => setSelectedFilter('all')}
           >
             All Matches ({archives.length})
           </button>
-          <button 
+          <button
             type="button"
-            className={`ott-filter-pill ${selectedFilter === 'free' ? 'active' : ''}`}
+            className={`filter-tab-pill ${selectedFilter === 'free' ? 'active' : ''}`}
             onClick={() => setSelectedFilter('free')}
           >
-            Free Window
+            Free Replays
           </button>
-          <button 
+          <button
             type="button"
-            className={`ott-filter-pill ${selectedFilter === 'paywalled' ? 'active' : ''}`}
+            className={`filter-tab-pill ${selectedFilter === 'paywalled' ? 'active' : ''}`}
             onClick={() => setSelectedFilter('paywalled')}
           >
-            Match Vault
+            VIP Archives
           </button>
         </div>
       </div>
 
-      <div className="vod-grid">
+      {/* Grid of 16:9 Match Cards */}
+      <div className="ott-replays-grid">
         {filteredArchives.map((session) => {
           const isUnlocked = isSubscriber || unlockedMatchIds.has(session.id) || !session.isOlderThan2Hours;
           const isFreeWindow = !session.isOlderThan2Hours;
           const hasDownloadAccess = isSubscriber || unlockedMatchIds.has(session.id);
 
           return (
-            <div key={session.id} className="vod-card">
+            <div 
+              key={session.id} 
+              className="replay-card"
+              onClick={() => handleWatchReplay(session)}
+            >
               {/* Thumbnail Container */}
-              <div className="vod-thumb-box" onClick={() => handleWatchReplay(session)}>
+              <div className="replay-thumb-wrap">
                 <img 
                   src={session.thumbnail} 
                   alt={session.title}
-                  className="vod-thumb-img" 
+                  className="replay-thumb-img" 
                 />
-                <div className="vod-thumb-overlay" />
+                <div className="replay-thumb-overlay" />
 
-                {/* Status Badges */}
-                <div className="vod-badge-top">
+                {/* Hover Play Button */}
+                <div className="replay-play-hover-btn">
+                  {isUnlocked ? <Play size={20} fill="currentColor" /> : <Lock size={20} />}
+                </div>
+
+                {/* Top Badge: Free / Unlocked / Locked */}
+                <div className="replay-top-badge">
                   {isFreeWindow ? (
-                    <span className="vod-free-badge">
+                    <span className="badge-free-window">
                       <Clock size={11} />
-                      Free Replay ({formatRemainingTime(session.timeRemainingInFreeWindowMs)})
+                      <span>Free ({formatRemainingTime(session.timeRemainingInFreeWindowMs)})</span>
                     </span>
                   ) : isUnlocked ? (
-                    <span className="vod-unlocked-badge">
+                    <span className="badge-unlocked">
                       <Unlock size={11} />
-                      {isSubscriber ? 'VIP Access' : 'Unlocked'}
+                      <span>Unlocked</span>
                     </span>
                   ) : (
-                    <span className="vod-locked-badge">
+                    <span className="badge-locked">
                       <Lock size={11} />
-                      Match Pass ($1.99)
+                      <span>Match Pass</span>
                     </span>
                   )}
                 </div>
 
                 {/* Score Pill */}
-                <div className="vod-score-pill">
+                <div className="replay-score-pill">
                   {session.score}
-                </div>
-
-                {/* Play Button Overlay */}
-                <div className="vod-play-overlay">
-                  <div className="vod-play-circle">
-                    <Play size={20} className="fill-white text-white" />
-                  </div>
                 </div>
               </div>
 
-              {/* Card Meta Content */}
-              <div className="vod-content">
-                <div className="vod-meta-top">
-                  <span className="vod-sport-tag">{session.sport}</span>
-                  <span className="vod-views">{session.views} views</span>
+              {/* Match Details */}
+              <div className="replay-body">
+                <div className="replay-meta">
+                  <span>{session.sport}</span>
+                  <span>&bull;</span>
+                  <span>{Math.round(session.durationSeconds / 60)} min</span>
                 </div>
 
-                <h4 className="vod-title" onClick={() => handleWatchReplay(session)}>
+                <h3 className="replay-title" title={session.title}>
                   {session.title}
-                </h4>
+                </h3>
 
-                <p className="vod-desc">{session.description}</p>
+                <p className="replay-desc">
+                  {session.description}
+                </p>
 
-                {/* Actions */}
-                <div className="vod-actions-row">
+                {/* Card Action Row */}
+                <div className="replay-actions-row">
                   <button 
                     type="button"
-                    onClick={() => handleWatchReplay(session)}
-                    className={`btn btn-sm ${isUnlocked ? 'btn-ott-lime' : 'btn-ott-gold'}`}
-                    style={{ flex: 1.2 }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleWatchReplay(session);
+                    }}
+                    className={`btn-replay-action ${isUnlocked ? 'is-watch' : 'is-unlock'}`}
                   >
-                    {isUnlocked ? <Play size={13} /> : <Lock size={13} />}
-                    <span>{isUnlocked ? 'Watch Replay' : 'Unlock ($1.99)'}</span>
+                    {isUnlocked ? <Play size={13} fill="currentColor" /> : <Lock size={13} />}
+                    <span>{isUnlocked ? 'Watch' : 'Unlock ($1.99)'}</span>
                   </button>
 
                   <button 
                     type="button"
-                    onClick={() => handleDownload(session)}
-                    className="btn btn-ott-dark btn-sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDownload(session);
+                    }}
+                    className="btn-replay-download"
                     title={hasDownloadAccess ? 'Download full match recording (MP4)' : 'Download requires Match Pass ($1.99)'}
                   >
                     {hasDownloadAccess ? <Download size={13} /> : <Lock size={13} />}
-                    <span>MP4</span>
+                    <span>{hasDownloadAccess ? 'MP4' : '$1.99'}</span>
                   </button>
                 </div>
               </div>
@@ -217,72 +229,75 @@ export default function ReplayArchives({
         })}
       </div>
 
-      {/* Modal Replay Player for Authorized Sessions */}
+      {/* Cinematic Modal Player for Authorized Replays */}
       {activeReplaySession && (() => {
         const hasActiveDownloadAccess = isSubscriber || unlockedMatchIds.has(activeReplaySession.id);
         return (
           <div className="modal-backdrop" onClick={() => setActiveReplaySession(null)}>
-            <div className="modal-content" style={{ maxWidth: 780 }} onClick={e => e.stopPropagation()}>
-              <div className="modal-header">
+            <div className="ott-modal-card" onClick={e => e.stopPropagation()}>
+              <div className="ott-modal-header">
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span className="badge-ott-pill">
-                      <Play size={12} /> Match Replay
-                    </span>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                      Access: {activeReplaySession.accessType === 'free_window' ? 'Public Free Replay' : 'Match Pass'}
-                    </span>
+                  <div className="modal-pill-tag">
+                    <Play size={12} fill="currentColor" />
+                    <span>Match Replay</span>
                   </div>
-                  <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginTop: '0.35rem' }}>
+                  <h3 className="modal-title-text">
                     {activeReplaySession.title}
                   </h3>
                 </div>
-                <button onClick={() => setActiveReplaySession(null)} className="ott-icon-button">
-                  <X size={16} />
+                <button 
+                  type="button"
+                  onClick={() => setActiveReplaySession(null)} 
+                  className="modal-close-btn"
+                >
+                  <X size={18} />
                 </button>
               </div>
 
-              <div className="modal-body" style={{ padding: '1rem' }}>
+              <div className="ott-modal-body">
                 {replayLoading ? (
-                  <div style={{ padding: '3rem', textAlign: 'center', color: '#94a3b8' }}>
-                    Authorizing stream playback...
+                  <div className="modal-loading-box">
+                    <div className="spinner-loader" />
+                    <span>Loading match stream...</span>
                   </div>
                 ) : replayError ? (
-                  <div className="notice-box" style={{ borderColor: '#f43f5e', color: '#fca5a5' }}>
+                  <div className="modal-error-box">
                     <AlertTriangle size={18} />
                     <span>{replayError}</span>
                   </div>
                 ) : (
-                  <div style={{ borderRadius: 12, overflow: 'hidden', background: '#000' }}>
+                  <div className="modal-video-box">
                     <video 
                       src={activeReplaySession.playbackUrl} 
                       controls 
                       autoPlay 
-                      style={{ width: '100%', maxHeight: 440, display: 'block' }} 
+                      className="modal-video-tag"
                     />
                   </div>
                 )}
               </div>
 
-              <div className="modal-footer">
+              <div className="ott-modal-footer">
                 <button 
+                  type="button"
                   onClick={() => handleDownload(activeReplaySession)}
-                  className="btn btn-ott-dark btn-sm"
+                  className="btn-ott-secondary btn-sm"
                 >
                   {hasActiveDownloadAccess ? <Download size={14} /> : <Lock size={14} />}
-                  <span>{hasActiveDownloadAccess ? 'Download MP4 File' : 'Download ($1.99)'}</span>
+                  <span>{hasActiveDownloadAccess ? 'Download MP4' : 'Download MP4 ($1.99)'}</span>
                 </button>
                 <button 
+                  type="button"
                   onClick={() => setActiveReplaySession(null)}
-                  className="btn btn-ott-lime btn-sm"
+                  className="btn-ott-primary btn-sm"
                 >
-                  Close Replay
+                  Close
                 </button>
               </div>
             </div>
           </div>
         );
       })()}
-    </div>
+    </section>
   );
 }

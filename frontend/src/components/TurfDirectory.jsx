@@ -1,116 +1,141 @@
 import React from 'react';
-import { MapPin, Star, Radio, Sparkles, Check, ArrowRight, Calendar } from 'lucide-react';
+import { MapPin, Star, Radio, Calendar, Sparkles, Search } from 'lucide-react';
 
 export default function TurfDirectory({ 
-  turfs, 
+  turfs = [], 
   activeTurfId, 
   onSelectTurf, 
-  onBookTurf 
+  onBookTurf,
+  searchQuery = '',
+  onClearSearch
 }) {
   return (
-    <div className="grounds-section" id="grounds-near-me">
-      <div className="grounds-section-header">
-        <div>
-          <div className="ott-section-badge">
-            <MapPin size={13} className="text-lime" />
-            <span>GROUNDS NEAR ME</span>
+    <section className="ott-section" id="grounds-near-me">
+      {/* Section Header */}
+      <div className="ott-section-header">
+        <div className="section-title-wrap">
+          <div className="section-badge-pill">
+            <MapPin size={13} className="text-blue" />
+            <span>COMMUNITY TURFS</span>
           </div>
-          <h2 className="ott-section-title">Verified Grassroots Venues</h2>
+          <h2 className="section-heading">Featured Grounds & Venues</h2>
+          <p className="section-subheading">
+            Live broadcast arenas equipped with 4K multi-angle automated match cameras.
+          </p>
         </div>
-        <span className="grounds-count-badge">
-          {turfs.length} Arenas Active
-        </span>
+        <div className="section-count-badge">
+          {turfs.length} {searchQuery ? 'Matching' : 'Active'} {turfs.length === 1 ? 'Venue' : 'Venues'}
+        </div>
       </div>
 
-      <div className="grounds-cards-grid">
+      {turfs.length === 0 ? (
+        <div className="turf-empty-search-state">
+          <div className="empty-icon-wrap">
+            <Search size={32} className="text-muted" />
+          </div>
+          <h3 className="empty-title">No turfs found</h3>
+          <p className="empty-desc">
+            We couldn't find any turf matching {searchQuery ? `"${searchQuery}"` : 'your filters'}.
+          </p>
+          {onClearSearch && (
+            <button
+              type="button"
+              className="btn-clear-search"
+              onClick={onClearSearch}
+            >
+              Clear Search & Show All Turfs
+            </button>
+          )}
+        </div>
+      ) : (
+        /* Grid of Turf Arena Cards */
+        <div className="ott-grounds-grid">
         {turfs.map((turf) => {
           const isActive = turf.id === activeTurfId;
 
           return (
             <div
               key={turf.id}
-              className={`ground-card ${isActive ? 'active-pitch' : ''}`}
+              className={`ground-card ${isActive ? 'is-current-active' : ''}`}
               onClick={() => onSelectTurf(turf.id)}
             >
-              {/* Pitch Visual & Overlay Badges */}
-              <div className="ground-img-wrapper">
-                <img 
-                  src={turf.image || 'https://images.unsplash.com/photo-1529900241454-946a3628e93d?auto=format&fit=crop&w=800&q=80'} 
+              {/* Image & Badges */}
+              <div className="ground-thumb-wrap">
+                <img
+                  src={turf.image || 'https://images.unsplash.com/photo-1529900241454-946a3628e93d?auto=format&fit=crop&w=600&q=80'}
                   alt={turf.name}
-                  className="ground-img" 
+                  className="ground-thumb-img"
                 />
-                <div className="ground-img-overlay" />
+                <div className="ground-thumb-gradient" />
 
-                {/* Top Badges */}
-                <div className="ground-top-badges">
-                  {turf.badge && (
-                    <span className="badge-ott-pill">{turf.badge}</span>
-                  )}
+                {/* Badges */}
+                <div className="ground-badge-row">
                   {turf.isLive ? (
-                    <span className="badge-ott-live">
-                      <span className="live-radar-dot" />
+                    <span className="ground-live-badge">
+                      <span className="live-dot-mini" />
                       LIVE FEED
                     </span>
                   ) : (
-                    <span className="badge-ott-ready">4K BROADCAST</span>
+                    <span className="ground-hd-badge">4K CAM READY</span>
+                  )}
+                  {turf.badge && (
+                    <span className="ground-tag-pill">{turf.badge}</span>
                   )}
                 </div>
 
-                {/* Price Tag Pill directly on card */}
-                <div className="ground-price-tag">
+                <div className="ground-price-badge">
                   {turf.priceFormatted || `$${turf.price}`}
                 </div>
               </div>
 
-              {/* Card Content Details */}
-              <div className="ground-details">
-                <div className="ground-headline">
-                  <h3 className="ground-title">{turf.name}</h3>
-                  <div className="ground-rating">
-                    <Star size={13} className="fill-lime text-lime" />
+              {/* Card Content */}
+              <div className="ground-card-body">
+                <div className="ground-title-row">
+                  <h3 className="ground-name">{turf.name}</h3>
+                  <div className="ground-star-rating">
+                    <Star size={13} className="star-icon" fill="currentColor" />
                     <span>{turf.rating || '4.9'}</span>
                   </div>
                 </div>
 
-                <div className="ground-subline">
+                <div className="ground-specs">
                   <span className="ground-location">
                     <MapPin size={12} />
                     {turf.location}
                   </span>
-                  <span className="ground-dot">&bull;</span>
-                  <span className="ground-sport">{turf.sport}</span>
-                  <span className="ground-dot">&bull;</span>
-                  <span className="ground-dims">{turf.dimensions}</span>
+                  <span>&bull;</span>
+                  <span>{turf.sport}</span>
+                  <span>&bull;</span>
+                  <span>{turf.dimensions}</span>
                 </div>
 
-                {/* Amenities Chips */}
-                <div className="ground-amenities-row">
-                  {(turf.amenities || ['Artificial Grass', 'Floodlights', 'Free Parking']).slice(0, 4).map((item, idx) => (
-                    <span key={idx} className="amenity-chip">
+                {/* Amenities */}
+                <div className="ground-amenities">
+                  {(turf.amenities || ['Turf Grass', 'Floodlights', 'Free Parking']).slice(0, 3).map((item, idx) => (
+                    <span key={idx} className="amenity-tag">
                       {item}
                     </span>
                   ))}
                 </div>
 
-                {/* Actions Footer */}
-                <div className="ground-actions-footer">
-                  <button 
+                {/* Action Buttons */}
+                <div className="ground-btn-row">
+                  <button
                     type="button"
-                    className={`btn-ground-stream ${isActive ? 'is-streaming' : ''}`}
+                    className={`btn-ground-watch ${isActive ? 'active-watching' : ''}`}
                     onClick={(e) => {
                       e.stopPropagation();
                       onSelectTurf(turf.id);
-                      const player = document.getElementById('live-player-section');
-                      if (player) player.scrollIntoView({ behavior: 'smooth' });
+                      document.getElementById('live-player-section')?.scrollIntoView({ behavior: 'smooth' });
                     }}
                   >
                     <Radio size={14} />
-                    <span>{isActive ? 'Watching Live' : 'Watch Live Feed'}</span>
+                    <span>{isActive ? 'Watching' : 'Watch Stream'}</span>
                   </button>
 
-                  <button 
+                  <button
                     type="button"
-                    className="btn-ground-book"
+                    className="btn-ground-book-slot"
                     onClick={(e) => {
                       e.stopPropagation();
                       if (onBookTurf) onBookTurf(turf);
@@ -125,6 +150,7 @@ export default function TurfDirectory({
           );
         })}
       </div>
-    </div>
+      )}
+    </section>
   );
 }

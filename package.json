@@ -7,7 +7,7 @@
     "test": "node backend/tests/api.test.js",
     "build": "npm run build --prefix frontend",
     "start:mediamtx": ".\\mediamtx\\mediamtx.exe .\\mediamtx\\mediamtx.yml",
-    "simulate:camera": "node scripts/simulate-camera.js --turf turf1",
+    "simulate:camera": "node scripts/simulate-camera.js --turf turf1 --video scripts/sample-feed.mp4",
     "simulate:turf2": "node scripts/simulate-camera.js --turf turf2",
     "stop": "powershell -ExecutionPolicy Bypass -File .\\stop-all.ps1",
     "dev:backend": "node backend/src/server.js",

@@ -224,33 +224,25 @@ module.exports = {
         freeWindowExpiresAt,
         timeRemainingInFreeWindowMs: timeRemainingMs,
         price: 1.99,
-        currency: 'USD'
+        requiredForReplay: isOlderThan2Hours,
+        requiredForDownload: true
       };
     });
   },
   getArchiveById: (id) => {
-    const item = archives.find(a => a.id === id);
-    if (!item) return null;
+    const a = archives.find(x => x.id === id);
+    if (!a) return null;
     const now = Date.now();
-    const endedTime = new Date(item.endedAt).getTime();
+    const endedTime = new Date(a.endedAt).getTime();
     const ageMs = now - endedTime;
     const isOlderThan2Hours = ageMs > config.paywallFreeWindowMs;
-    const freeWindowExpiresAt = new Date(endedTime + config.paywallFreeWindowMs).toISOString();
-    const timeRemainingMs = Math.max(0, config.paywallFreeWindowMs - ageMs);
 
     return {
-      ...item,
+      ...a,
       ageMinutes: Math.round(ageMs / 60000),
       isOlderThan2Hours,
-      freeWindowExpiresAt,
-      timeRemainingInFreeWindowMs: timeRemainingMs,
-      price: 1.99,
-      currency: 'USD'
+      price: 1.99
     };
-  },
-  addArchive: (session) => {
-    archives.unshift(session);
-    return session;
   },
   resetDemoSeed: () => {
     archives = generateSeedArchives();

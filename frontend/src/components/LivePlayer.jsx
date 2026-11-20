@@ -1,24 +1,24 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Hls from 'hls.js';
-import { 
-  Volume2, 
-  VolumeX, 
-  Maximize2, 
-  Radio, 
-  Eye, 
-  Tv, 
-  Activity, 
-  Camera, 
-  Sparkles, 
-  Layers,
-  ChevronRight
+import {
+  Volume2,
+  VolumeX,
+  Maximize2,
+  Radio,
+  Eye,
+  RefreshCw,
+  Camera,
+  Calendar,
+  Sparkles,
+  Play
 } from 'lucide-react';
 
-export default function LivePlayer({ 
-  activeTurf, 
-  turfs = [], 
-  onSelectTurf, 
-  isMediaServerOnline 
+export default function LivePlayer({
+  activeTurf,
+  turfs = [],
+  onSelectTurf,
+  isMediaServerOnline,
+  onBookTurf
 }) {
   const videoRef = useRef(null);
   const hlsRef = useRef(null);
@@ -29,6 +29,7 @@ export default function LivePlayer({
   const [reloadKey, setReloadKey] = useState(0);
   const [cameraAngle, setCameraAngle] = useState('Sideline HD');
   const [matchMinute, setMatchMinute] = useState(64);
+  const retryCountRef = useRef(0);
 
   // Match minute ticker
   useEffect(() => {
@@ -39,6 +40,7 @@ export default function LivePlayer({
   }, []);
 
   const retryStream = () => {
+    retryCountRef.current = 0;
     setStreamError(false);
     setIsConnecting(true);
     setReloadKey(k => k + 1);
@@ -66,7 +68,9 @@ export default function LivePlayer({
         liveMaxLatencyDurationCount: 6,
         enableWorker: true,
         lowLatencyMode: true,
-        backBufferLength: 60
+        backBufferLength: 60,
+        manifestLoadingMaxRetry: 5,
+        manifestLoadingRetryDelay: 1000
       });
       hlsRef.current = hls;
 
@@ -76,7 +80,12 @@ export default function LivePlayer({
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         setIsConnecting(false);
         setStreamError(false);
-        video.play().then(() => setIsPlaying(true)).catch(() => {
+        retryCountRef.current = 0;
+
+        video.muted = true;
+        video.play().then(() => {
+          setIsPlaying(true);
+        }).catch(() => {
           setIsPlaying(false);
         });
       });
@@ -85,26 +94,32 @@ export default function LivePlayer({
         if (data.fatal) {
           switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
-              setIsConnecting(false);
-              setStreamError(true);
+              if (retryCountRef.current < 4) {
+                retryCountRef.current += 1;
+                hls.startLoad();
+              } else {
+                setIsConnecting(false);
+                setStreamError(true);
+              }
               break;
             case Hls.ErrorTypes.MEDIA_ERROR:
               hls.recoverMediaError();
               break;
             default:
-              hls.destroy();
               setIsConnecting(false);
               setStreamError(true);
+              hls.destroy();
               break;
           }
         }
       });
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = streamUrl;
+      video.muted = true;
       video.addEventListener('loadedmetadata', () => {
         setIsConnecting(false);
         setStreamError(false);
-        video.play().then(() => setIsPlaying(true)).catch(() => {});
+        video.play().then(() => setIsPlaying(true)).catch(() => { });
       });
       video.addEventListener('error', () => {
         setIsConnecting(false);
@@ -131,157 +146,212 @@ export default function LivePlayer({
     const el = videoRef.current?.parentElement;
     if (!el) return;
     if (!document.fullscreenElement) {
-      el.requestFullscreen().catch(() => {});
+      el.requestFullscreen().catch(() => { });
     } else {
-      document.exitFullscreen().catch(() => {});
+      document.exitFullscreen().catch(() => { });
     }
   };
 
   return (
-    <div className="ott-broadcast-container" id="live-player-section">
-      {/* OTT Screen Frame */}
-      <div className="ott-player-frame">
-        {/* Real Video or High-Impact Sports Canvas */}
-        <video
-          ref={videoRef}
-          className="ott-video-element"
-          playsInline
-          muted={isMuted}
-          autoPlay
-        />
+    <div className="ott-hero-section" id="live-player-section">
+      {/* Cinematic Main Screen */}
+      <div className="ott-player-wrapper">
+        <div className="ott-video-viewport">
+          <video
+            ref={videoRef}
+            className="ott-video-surface"
+            playsInline
+            muted={isMuted}
+            autoPlay
+            poster="/sample-feed-poster.jpg"
+          />
 
-        {/* Video Overlay / Top HUD */}
-        <div className="ott-hud-overlay">
-          <div className="ott-hud-top-left">
-            <div className="ott-live-badge-glow">
-              <span className="ott-pulse-beacon" />
-              <span>LIVE BROADCAST</span>
+          {/* Clean Gradient Shading for Text Visibility */}
+          <div className="ott-screen-vignette" />
+
+          {/* Top Overlaid HUD Controls */}
+          <div className="ott-overlay-header">
+            {/* Live Indicator & Score Bug */}
+            <div className="ott-header-left">
+              <div className="ott-live-tag">
+                <span className="live-pulse-dot" />
+                <span>LIVE</span>
+              </div>
+
+              <div className="ott-scoreboard">
+                <span className="scoreboard-team">TITANS</span>
+                <span className="scoreboard-goals">2 - 1</span>
+                <span className="scoreboard-team">APEX</span>
+                <span className="scoreboard-minute">{matchMinute}'</span>
+              </div>
             </div>
 
-            <div className="ott-score-bug">
-              <span className="bug-team home">TITANS</span>
-              <span className="bug-score">2</span>
-              <span className="bug-divider">-</span>
-              <span className="bug-score">1</span>
-              <span className="bug-team away">APEX</span>
-              <span className="bug-clock">{matchMinute}'</span>
-            </div>
-          </div>
+            {/* Right Controls */}
+            <div className="ott-header-right">
+              {/* Camera Switcher Dropdown */}
+              <div className="ott-cam-pill">
+                <Camera size={13} />
+                <select
+                  value={cameraAngle}
+                  onChange={(e) => setCameraAngle(e.target.value)}
+                  className="ott-cam-dropdown"
+                >
+                  <option value="Sideline HD">Cam 1: Sideline</option>
+                  <option value="Goal High">Cam 2: Goal End</option>
+                  <option value="Tactical Drone">Cam 3: Aerial</option>
+                </select>
+              </div>
 
-          <div className="ott-hud-top-right">
-            {/* Camera angle switcher */}
-            <div className="ott-cam-angle-selector">
-              <Camera size={13} className="text-lime" />
-              <select 
-                value={cameraAngle} 
-                onChange={(e) => setCameraAngle(e.target.value)}
-                className="ott-cam-select"
+              {/* Viewers Pill */}
+              <div className="ott-viewer-pill">
+                <Eye size={13} />
+                <span>{activeTurf?.activeViewers || 42}</span>
+              </div>
+
+              {/* Sound Button */}
+              <button
+                type="button"
+                onClick={toggleMute}
+                className="ott-player-btn"
+                title={isMuted ? 'Unmute' : 'Mute'}
+                aria-label={isMuted ? 'Unmute audio' : 'Mute audio'}
               >
-                <option value="Sideline HD">Cam 1: Sideline HD</option>
-                <option value="Goal High">Cam 2: Goal End High</option>
-                <option value="Tactical Drone">Cam 3: Tactical Aerial</option>
-              </select>
+                {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+              </button>
+
+              {/* Fullscreen Button */}
+              <button
+                type="button"
+                onClick={toggleFullscreen}
+                className="ott-player-btn"
+                title="Fullscreen"
+                aria-label="Toggle fullscreen"
+              >
+                <Maximize2 size={16} />
+              </button>
             </div>
-
-            {/* Viewers */}
-            <div className="ott-pill-stat">
-              <Eye size={13} className="text-lime" />
-              <span>{activeTurf?.activeViewers || 38} live fans</span>
-            </div>
-
-            {/* Mute button */}
-            <button 
-              type="button"
-              onClick={toggleMute}
-              className="ott-control-btn"
-              title={isMuted ? 'Unmute' : 'Mute'}
-            >
-              {isMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
-            </button>
-
-            {/* Fullscreen */}
-            <button 
-              type="button"
-              onClick={toggleFullscreen}
-              className="ott-control-btn"
-              title="Fullscreen"
-            >
-              <Maximize2 size={15} />
-            </button>
-          </div>
-        </div>
-
-        {/* Bottom Metadata Bar over Player */}
-        <div className="ott-player-bottom-bar">
-          <div className="ott-player-turf-info">
-            <div className="turf-sport-tag">
-              ⚽ {activeTurf?.sport} &bull; {activeTurf?.location}
-            </div>
-            <h1 className="turf-display-name">{activeTurf?.name}</h1>
           </div>
 
-          <div className="ott-player-actions">
-            <span className="ott-quality-pill">4K &bull; 60 FPS &bull; LOW LATENCY</span>
-          </div>
-        </div>
-
-        {/* Stream Error / Standby Broadcast Screen */}
-        {streamError && (
-          <div className="ott-standby-screen">
-            <div className="standby-ambient-glow" />
-            <div className="standby-content">
-              <div className="standby-icon-badge">
-                <Radio size={24} className="text-lime" />
-              </div>
-
-              <div className="standby-text">
-                <h3>Live Feed Standby &bull; Next Kick-Off Approaching</h3>
+          {/* Standby / Next Match Screen */}
+          {streamError && (
+            <div className="ott-standby-overlay">
+              <div className="standby-box">
+                <div className="standby-badge">
+                  <Radio size={20} className="text-blue" />
+                </div>
+                <h3>Match Feed Standby</h3>
                 <p>
-                  Cameras are online at <strong>{activeTurf?.name}</strong>. MediaMTX ingestion pipeline is ready for camera stream.
+                  Broadcasting live from <strong>{activeTurf?.name}</strong>. Stream is synchronizing with the arena camera feed.
                 </p>
-              </div>
-
-              <div className="standby-controls">
-                <button onClick={retryStream} className="btn btn-ott-lime btn-sm">
-                  Retry Live Feed
+                <button onClick={retryStream} className="btn-ott-primary btn-sm">
+                  <RefreshCw size={14} />
+                  <span>Retry Feed</span>
                 </button>
-                <span className="free-public-guarantee">
-                  ✓ 100% Free Public OTT Streaming &bull; No Login Required
-                </span>
               </div>
             </div>
+          )}
+
+          {/* Bottom Title & Match Info Bar */}
+          <div className="ott-player-info-strip">
+            <div className="info-main">
+              <span className="info-sport-label">
+                {activeTurf?.sport} &bull; {activeTurf?.location}
+              </span>
+              <h1 className="info-title">{activeTurf?.name}</h1>
+            </div>
+
+            <div className="info-actions">
+              <span className="ott-badge-quality">1080p 60FPS</span>
+              {onBookTurf && (
+                <button
+                  type="button"
+                  onClick={() => onBookTurf(activeTurf)}
+                  className="btn-ott-action"
+                >
+                  <Calendar size={14} />
+                  <span>Book This Ground</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setStreamError(false);
+                  setIsConnecting(false);
+                  if (hlsRef.current) {
+                    hlsRef.current.destroy();
+                    hlsRef.current = null;
+                  }
+                  const v = videoRef.current;
+                  if (v) {
+                    v.src = '/sample-feed.mp4';
+                    v.loop = true;
+                    v.muted = isMuted;
+                    v.play().catch(() => { });
+                  }
+                }}
+                className="btn btn-sm"
+                style={{ background: 'rgba(255, 255, 255, 0.15)', color: '#fff', border: '1px solid rgba(255, 255, 255, 0.25)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              >
+                <Play size={13} />
+                <span>Preview Sample Feed</span>
+              </button>
+            </div>
           </div>
-        )}
+        </div>
       </div>
 
-      {/* OTT Channel Switcher Bar (Like DAZN / Apple TV Channels) */}
-      <div className="ott-channels-bar">
-        <div className="channels-bar-title">
-          <Tv size={15} className="text-lime" />
-          <span>CHANNELS ON AIR</span>
+      {/* Channels On Air / Turf Switcher Rail */}
+      <div className="ott-channels-container">
+        <div className="channels-section-header">
+          <div className="section-title-group">
+            <span className="live-dot-mini" />
+            <span className="channels-title-text">CHANNELS ON AIR</span>
+          </div>
+          <span className="channels-subtitle-text">Select an arena to switch broadcast</span>
         </div>
 
-        <div className="channels-scroll-row">
-          {turfs.map((t) => {
-            const isSelected = t.id === activeTurf?.id;
-            return (
-              <button
-                key={t.id}
-                type="button"
-                className={`ott-channel-chip ${isSelected ? 'channel-active' : ''}`}
-                onClick={() => onSelectTurf(t.id)}
-              >
-                <div className="channel-chip-thumb">
-                  <img src={t.image || 'https://images.unsplash.com/photo-1529900241454-946a3628e93d?auto=format&fit=crop&w=200&q=80'} alt={t.name} />
-                  <span className="channel-live-dot" />
-                </div>
-                <div className="channel-chip-info">
-                  <span className="channel-name">{t.name}</span>
-                  <span className="channel-sport">{t.sport} &bull; {t.priceFormatted || '$' + t.price}</span>
-                </div>
-              </button>
-            );
-          })}
+        <div className="channels-card-row">
+          {turfs.length === 0 ? (
+            <div className="channels-empty-notice">
+              <span>No active channels matching your turf search.</span>
+            </div>
+          ) : (
+            turfs.map((t) => {
+              const isSelected = t.id === activeTurf?.id;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  className={`channel-card ${isSelected ? 'is-active' : ''}`}
+                  onClick={() => onSelectTurf(t.id)}
+                >
+                  <div className="channel-thumb-box">
+                    <img 
+                      src={t.image || 'https://images.unsplash.com/photo-1529900241454-946a3628e93d?auto=format&fit=crop&w=400&q=80'} 
+                      alt={t.name}
+                      className="channel-thumb-img" 
+                    />
+                    <div className="channel-thumb-overlay" />
+                    {t.isLive ? (
+                      <span className="channel-live-badge">
+                        <span className="channel-live-dot" />
+                        LIVE
+                      </span>
+                    ) : null}
+                    <span className="channel-viewers-count">
+                      {t.activeViewers || 30}+ watching
+                    </span>
+                  </div>
+                  <div className="channel-card-body">
+                    <h4 className="channel-name">{t.name}</h4>
+                    <p className="channel-details">
+                      {t.sport} &bull; {t.location}
+                    </p>
+                  </div>
+                </button>
+              );
+            })
+          )}
         </div>
       </div>
     </div>
